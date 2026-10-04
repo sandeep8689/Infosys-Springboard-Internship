@@ -11,9 +11,17 @@ git init
 git add .
 git commit -m "Add medical symptom web app with deploy config"
 git branch -M main
-git remote add origin https://github.com/YOUR_USERNAME/Infosys-Springboard-Internship.git
+git remote add origin https://github.com/sandeep8689/Infosys-Springboard-Internship.git
 git push -u origin main
 ```
+
+**Do not send your GitHub password in chat.** Use one of:
+
+- **GitHub Desktop** — File → Add local repository → Publish repository  
+- **Browser login** — when `git push` opens a sign-in window, use your GitHub account  
+- **Personal Access Token** — GitHub → Settings → Developer settings → [Fine-grained tokens](https://github.com/settings/tokens?type=beta) → use token as password when Git asks
+
+If the repo `Infosys-Springboard-Internship` does not exist yet, create it on GitHub first (empty repo, no README).
 
 ## 2. Render (recommended — free public URL)
 
