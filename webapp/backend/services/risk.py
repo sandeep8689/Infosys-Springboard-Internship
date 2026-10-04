@@ -24,13 +24,11 @@ HIGH_DISEASES = {
     "cholecystitis",
 }
 
+# Approximate maximum internal raw score used to map 0–100 severity.
+_RAW_SCORE_MAX = 7.0
 
-def compute_risk_level(
-    disease: str,
-    confidence: float,
-    symptom_count: int,
-    age: int | None,
-) -> str:
+
+def _raw_score(disease: str, confidence: float, symptom_count: int, age: int | None) -> float:
     d = disease.lower().strip()
     score = 0.0
 
@@ -61,6 +59,27 @@ def compute_risk_level(
         elif age >= 45:
             score += 0.5
 
+    return score
+
+
+def compute_severity_score(
+    disease: str,
+    confidence: float,
+    symptom_count: int,
+    age: int | None,
+) -> float:
+    """0–100 severity score (higher = more urgent)."""
+    raw = _raw_score(disease, confidence, symptom_count, age)
+    return round(min(100.0, max(0.0, (raw / _RAW_SCORE_MAX) * 100.0)), 1)
+
+
+def compute_risk_level(
+    disease: str,
+    confidence: float,
+    symptom_count: int,
+    age: int | None,
+) -> str:
+    score = _raw_score(disease, confidence, symptom_count, age)
     if score >= 5.5:
         return "Critical"
     if score >= 4.0:
@@ -68,3 +87,17 @@ def compute_risk_level(
     if score >= 2.5:
         return "Medium"
     return "Low"
+
+
+def compute_risk_assessment(
+    disease: str,
+    confidence: float,
+    symptom_count: int,
+    age: int | None,
+) -> dict[str, str | float]:
+    level = compute_risk_level(disease, confidence, symptom_count, age)
+    severity = compute_severity_score(disease, confidence, symptom_count, age)
+    return {
+        "risk_level": level,
+        "severity_score": severity,
+    }

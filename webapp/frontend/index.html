@@ -42,10 +42,16 @@
 
     <section class="card glass animate-in" id="resultsCard" hidden>
       <h2><span class="icon">📋</span> Results</h2>
-      <div class="result-grid">
+      <div class="result-grid result-grid-4">
         <div class="stat-box"><span class="label">Predicted disease</span><strong id="predDisease">—</strong></div>
         <div class="stat-box"><span class="label">Confidence</span><strong id="predConf">—</strong></div>
         <div class="stat-box"><span class="label">Risk level</span><strong id="predRisk" class="risk-pill">—</strong></div>
+        <div class="stat-box severity-box">
+          <span class="label">Severity score</span>
+          <strong id="predSeverity">—</strong>
+          <div class="severity-bar"><div id="severityFill" class="severity-fill"></div></div>
+          <small class="severity-hint">0 = low urgency · 100 = highest</small>
+        </div>
       </div>
       <h3>Top predictions</h3>
       <ul id="topList" class="top-list"></ul>

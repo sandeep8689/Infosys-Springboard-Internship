@@ -1,10 +1,19 @@
 import json
 from datetime import datetime, timezone
-from pathlib import Path
 
 import aiosqlite
 
 from backend.config import settings
+
+
+async def _migrate(db: aiosqlite.Connection) -> None:
+    cursor = await db.execute("PRAGMA table_info(consultations)")
+    rows = await cursor.fetchall()
+    columns = {row[1] for row in rows}
+    if "severity_score" not in columns:
+        await db.execute(
+            "ALTER TABLE consultations ADD COLUMN severity_score REAL DEFAULT 0"
+        )
 
 
 async def init_db() -> None:
@@ -20,11 +29,13 @@ async def init_db() -> None:
                 predicted_disease TEXT NOT NULL,
                 confidence REAL NOT NULL,
                 risk_level TEXT NOT NULL,
+                severity_score REAL DEFAULT 0,
                 recommendations_json TEXT NOT NULL,
                 created_at TEXT NOT NULL
             )
             """
         )
+        await _migrate(db)
         await db.commit()
 
 
@@ -36,15 +47,17 @@ async def save_consultation(
     predicted_disease: str,
     confidence: float,
     risk_level: str,
+    severity_score: float,
     recommendations: dict,
 ) -> int:
     async with aiosqlite.connect(settings.database_path) as db:
+        await _migrate(db)
         cursor = await db.execute(
             """
             INSERT INTO consultations
             (patient_name, age, symptoms_json, predicted_disease, confidence,
-             risk_level, recommendations_json, created_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+             risk_level, severity_score, recommendations_json, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
                 patient_name,
@@ -53,6 +66,7 @@ async def save_consultation(
                 predicted_disease,
                 confidence,
                 risk_level,
+                severity_score,
                 json.dumps(recommendations),
                 datetime.now(timezone.utc).isoformat(),
             ),
@@ -67,7 +81,7 @@ async def list_consultations(limit: int = 500) -> list[dict]:
         cursor = await db.execute(
             """
             SELECT id, patient_name, age, symptoms_json, predicted_disease,
-                   confidence, risk_level, recommendations_json, created_at
+                   confidence, risk_level, severity_score, recommendations_json, created_at
             FROM consultations
             ORDER BY id DESC
             LIMIT ?

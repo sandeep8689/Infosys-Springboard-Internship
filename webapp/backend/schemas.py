@@ -24,6 +24,7 @@ class PredictResponse(BaseModel):
     predicted_disease: str
     confidence: float
     risk_level: str
+    severity_score: float
     top_predictions: list[TopPrediction]
     recommendations: RecommendationBlock
 

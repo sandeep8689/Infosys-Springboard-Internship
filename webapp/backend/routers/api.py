@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException
-from fastapi.responses import Response, StreamingResponse
+from fastapi.responses import Response
 
 from backend import database
 from backend.schemas import AnalyticsSummary, PredictRequest, PredictResponse, RecommendationBlock, TopPrediction
@@ -8,7 +8,7 @@ from backend.services.llm import enhance_recommendations_async
 from backend.services.ml import artifacts_ready, get_symptom_list, predict_from_symptoms
 from backend.services.recommendations import build_recommendations
 from backend.services.reports import build_health_report_excel, build_health_report_pdf
-from backend.services.risk import compute_risk_level
+from backend.services.risk import compute_risk_assessment
 
 router = APIRouter(prefix="/api")
 
@@ -39,9 +39,12 @@ async def predict(body: PredictRequest):
         raise HTTPException(400, detail=f"Unknown symptoms: {unknown[:5]}")
 
     disease, confidence, top = predict_from_symptoms(body.symptoms)
-    risk = compute_risk_level(disease, confidence, len(body.symptoms), body.age)
+    assessment = compute_risk_assessment(disease, confidence, len(body.symptoms), body.age)
+    risk = str(assessment["risk_level"])
+    severity = float(assessment["severity_score"])
     rec = build_recommendations(disease, risk, body.symptoms)
     rec = await enhance_recommendations_async(disease, risk, rec)
+    rec_to_store = {**rec, "severity_score": severity}
 
     cid = await database.save_consultation(
         patient_name=body.patient_name,
@@ -50,7 +53,8 @@ async def predict(body: PredictRequest):
         predicted_disease=disease,
         confidence=confidence,
         risk_level=risk,
-        recommendations=rec,
+        severity_score=severity,
+        recommendations=rec_to_store,
     )
 
     return PredictResponse(
@@ -58,6 +62,7 @@ async def predict(body: PredictRequest):
         predicted_disease=disease,
         confidence=confidence,
         risk_level=risk,
+        severity_score=severity,
         top_predictions=[TopPrediction(disease=d, confidence=c) for d, c in top],
         recommendations=RecommendationBlock(**rec),
     )
@@ -88,13 +93,11 @@ async def report_pdf(consultation_id: int):
         msg = str(e)
         code = 404 if "not found" in msg.lower() else 500
         raise HTTPException(code, detail=msg) from e
+    except Exception as e:
+        raise HTTPException(500, detail=f"PDF build error: {type(e).__name__}: {e}") from e
     filename = f"MedAssist_report_{consultation_id}.pdf"
-
-    def iter_pdf():
-        yield content
-
-    return StreamingResponse(
-        iter_pdf(),
+    return Response(
+        content=content,
         media_type="application/pdf",
         headers={
             "Content-Disposition": f'attachment; filename="{filename}"',

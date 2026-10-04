@@ -182,6 +182,19 @@ async function loadAnalytics() {
   );
 }
 
+function setSeverityScore(score) {
+  const val = Number(score);
+  const el = document.getElementById("predSeverity");
+  const fill = document.getElementById("severityFill");
+  if (Number.isNaN(val)) {
+    el.textContent = "—";
+    fill.style.width = "0%";
+    return;
+  }
+  el.textContent = `${val.toFixed(1)} / 100`;
+  fill.style.width = `${Math.min(100, Math.max(0, val))}%`;
+}
+
 function setRiskBadge(level) {
   const el = document.getElementById("predRisk");
   el.textContent = level;
@@ -270,6 +283,7 @@ async function init() {
       document.getElementById("predDisease").textContent = result.predicted_disease;
       document.getElementById("predConf").textContent = `${(result.confidence * 100).toFixed(1)}%`;
       setRiskBadge(result.risk_level);
+      setSeverityScore(result.severity_score);
       document.getElementById("topList").innerHTML = result.top_predictions
         .map((t) => `<li>${t.disease} (${(t.confidence * 100).toFixed(1)}%)</li>`)
         .join("");
