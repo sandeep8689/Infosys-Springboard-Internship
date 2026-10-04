@@ -1,0 +1,23 @@
+# Secrets & local runtime
+webapp/.env
+webapp/.venv/
+webapp/data/app.db
+
+# Large local-only files (use sample_dataset.csv + deploy artifacts in repo)
+webapp/data/Diseases_and_Symptoms_dataset.csv
+
+# Oversized full training output (deploy model in artifacts/ is ~22MB)
+webapp/artifacts_deploy/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+.mypy_cache/
+
+# OS / IDE
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
