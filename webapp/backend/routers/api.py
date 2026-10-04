@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException
-from fastapi.responses import Response
+from fastapi.responses import Response, StreamingResponse
 
 from backend import database
 from backend.schemas import AnalyticsSummary, PredictRequest, PredictResponse, RecommendationBlock, TopPrediction
@@ -40,7 +40,7 @@ async def predict(body: PredictRequest):
 
     disease, confidence, top = predict_from_symptoms(body.symptoms)
     risk = compute_risk_level(disease, confidence, len(body.symptoms), body.age)
-    rec = build_recommendations(disease, risk)
+    rec = build_recommendations(disease, risk, body.symptoms)
     rec = await enhance_recommendations_async(disease, risk, rec)
 
     cid = await database.save_consultation(
@@ -85,11 +85,22 @@ async def report_pdf(consultation_id: int):
     try:
         content = await build_health_report_pdf(consultation_id)
     except ValueError as e:
-        raise HTTPException(404, detail=str(e)) from e
-    return Response(
-        content=content,
+        msg = str(e)
+        code = 404 if "not found" in msg.lower() else 500
+        raise HTTPException(code, detail=msg) from e
+    filename = f"MedAssist_report_{consultation_id}.pdf"
+
+    def iter_pdf():
+        yield content
+
+    return StreamingResponse(
+        iter_pdf(),
         media_type="application/pdf",
-        headers={"Content-Disposition": f'attachment; filename="health_report_{consultation_id}.pdf"'},
+        headers={
+            "Content-Disposition": f'attachment; filename="{filename}"',
+            "Content-Length": str(len(content)),
+            "Cache-Control": "no-store",
+        },
     )
 
 

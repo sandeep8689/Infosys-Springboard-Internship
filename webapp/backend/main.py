@@ -17,7 +17,7 @@ async def lifespan(_app: FastAPI):
 
 
 app = FastAPI(
-    title="AI Medical Symptom Analysis",
+    title="MedAssist — AI Medical Symptom Analysis",
     description="Prediction, risk, recommendations, reports, and analytics (Week 2)",
     lifespan=lifespan,
 )

@@ -3,70 +3,83 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>AI Medical Symptom Analysis — Week 2</title>
+  <title>MedAssist — AI Medical Symptom Analysis</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="/css/styles.css" />
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
 </head>
 <body>
+  <div class="bg-glow"></div>
   <header class="header">
-    <div>
-      <h1>AI Medical Symptom Analysis</h1>
-      <p class="subtitle">Prediction · Risk · Recommendations · Reports · Analytics</p>
+    <div class="brand">
+      <div class="logo">+</div>
+      <div>
+        <p class="brand-name">MedAssist</p>
+        <h1><span class="title-medassist">MedAssist</span> · AI Medical Symptom Analysis</h1>
+        <p class="subtitle">Prediction · Risk · Recommendations · Reports · Analytics</p>
+      </div>
     </div>
     <span id="modelStatus" class="badge badge-warn">Checking model…</span>
   </header>
 
   <main class="layout">
-    <section class="card">
-      <h2>Patient &amp; symptoms</h2>
+    <section class="card glass animate-in">
+      <h2><span class="icon">🩺</span> Patient &amp; symptoms</h2>
       <div class="grid-2">
         <label>Name<input id="patientName" type="text" value="Demo Patient" /></label>
         <label>Age<input id="patientAge" type="number" min="0" max="120" placeholder="Optional" /></label>
       </div>
       <label>Search symptoms
-        <input id="symptomSearch" type="search" placeholder="Type to filter 230 symptoms…" />
+        <input id="symptomSearch" type="search" placeholder="Type to filter symptoms (e.g. cough, fever)…" />
       </label>
       <div id="symptomList" class="symptom-list"></div>
-      <p class="hint">Selected: <span id="selectedCount">0</span></p>
-      <button id="predictBtn" class="btn primary">Run analysis</button>
+      <p class="hint">Selected: <strong id="selectedCount">0</strong></p>
+      <button id="predictBtn" class="btn primary glow-btn">Run analysis</button>
       <p id="predictError" class="error" hidden></p>
     </section>
 
-    <section class="card" id="resultsCard" hidden>
-      <h2>Results</h2>
+    <section class="card glass animate-in" id="resultsCard" hidden>
+      <h2><span class="icon">📋</span> Results</h2>
       <div class="result-grid">
-        <div><span class="label">Predicted disease</span><strong id="predDisease">—</strong></div>
-        <div><span class="label">Confidence</span><strong id="predConf">—</strong></div>
-        <div><span class="label">Risk level</span><strong id="predRisk" class="risk-pill">—</strong></div>
+        <div class="stat-box"><span class="label">Predicted disease</span><strong id="predDisease">—</strong></div>
+        <div class="stat-box"><span class="label">Confidence</span><strong id="predConf">—</strong></div>
+        <div class="stat-box"><span class="label">Risk level</span><strong id="predRisk" class="risk-pill">—</strong></div>
       </div>
       <h3>Top predictions</h3>
-      <ul id="topList"></ul>
-      <h3>Recommendations</h3>
+      <ul id="topList" class="top-list"></ul>
+      <h3>Treatment recommendations</h3>
       <div class="rec-columns">
-        <div><h4>Preventive care</h4><ul id="recPrevent"></ul></div>
-        <div><h4>Lifestyle</h4><ul id="recLife"></ul></div>
-        <div><h4>Follow-up</h4><ul id="recFollow"></ul></div>
+        <div class="rec-card preventive"><h4>🛡️ Preventive care</h4><ul id="recPrevent"></ul></div>
+        <div class="rec-card lifestyle"><h4>🌿 Lifestyle advice</h4><ul id="recLife"></ul></div>
+        <div class="rec-card follow"><h4>📅 Follow-up guidance</h4><ul id="recFollow"></ul></div>
       </div>
       <p id="llmSummary" class="llm-box" hidden></p>
       <div class="actions">
-        <a id="pdfLink" class="btn secondary" href="#" download>Download PDF</a>
-        <a id="excelLink" class="btn secondary" href="#" download>Download Excel</a>
+        <button type="button" id="pdfBtn" class="btn secondary">⬇ Download PDF</button>
+        <button type="button" id="excelBtn" class="btn secondary">⬇ Download Excel</button>
       </div>
     </section>
 
-    <section class="card wide">
-      <h2>Analytics dashboard</h2>
-      <p class="hint">Live from stored consultations + dataset statistics (after training).</p>
+    <section class="card wide glass animate-in">
+      <h2><span class="icon">📊</span> Analytics dashboard</h2>
+      <div class="kpi-row">
+        <div class="kpi"><span id="kpiTotal">0</span><small>Consultations logged</small></div>
+        <div class="kpi"><span id="kpiDiseases">0</span><small>Unique diseases (session)</small></div>
+        <div class="kpi"><span id="kpiSymptoms">0</span><small>Symptom entries tracked</small></div>
+      </div>
+      <p class="hint" id="analyticsHint">Charts update after each analysis. Baseline dataset stats show when session is empty.</p>
       <div class="charts">
-        <canvas id="diseaseChart"></canvas>
-        <canvas id="riskChart"></canvas>
-        <canvas id="symptomChart"></canvas>
+        <div class="chart-wrap"><h4>Disease statistics</h4><canvas id="diseaseChart"></canvas></div>
+        <div class="chart-wrap"><h4>Risk distribution</h4><canvas id="riskChart"></canvas></div>
+        <div class="chart-wrap"><h4>Symptom trends</h4><canvas id="symptomChart"></canvas></div>
       </div>
     </section>
   </main>
 
   <footer class="footer">
-    Educational demo only — not medical advice. Week 2: recommendation engine, reports, dashboard, Docker deploy.
+    MedAssist — educational demo only, not medical advice. Infosys Springboard Week 2.
   </footer>
   <script src="/js/app.js"></script>
 </body>

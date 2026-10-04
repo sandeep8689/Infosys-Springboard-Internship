@@ -43,9 +43,10 @@ async def enhance_recommendations_async(disease: str, risk_level: str, base: dic
     if not provider:
         return base
     prompt = (
-        f"Disease: {disease}. Risk: {risk_level}. "
-        "In 3 short bullet sentences, add patient-friendly context. "
-        "Do not diagnose or prescribe drugs."
+        f"Disease: {disease}. Risk level: {risk_level}. "
+        "Write exactly 3 bullet points as one paragraph: (1) one preventive care tip, "
+        "(2) one lifestyle tip, (3) one follow-up tip. Plain language. "
+        "Do not prescribe drug names. Educational only."
     )
     try:
         summary = await _call_chat(
