@@ -39,11 +39,19 @@ async def build_analytics_summary() -> dict:
     dataset_disease = ds.get("disease_counts") or {}
     dataset_symptoms = ds.get("top_symptoms") or {}
 
+    severities = [
+        float(row["severity_score"])
+        for row in rows
+        if row.get("severity_score") is not None
+    ]
+    avg_severity = round(sum(severities) / len(severities), 1) if severities else 0.0
+
     return {
         "total_consultations": len(rows),
         "disease_counts": dict(disease_counts.most_common(15)),
         "risk_distribution": risk_distribution,
         "symptom_trends": symptom_trends,
+        "average_severity": avg_severity,
         "model_ready": artifacts_ready(),
         "dataset_disease_stats": dataset_disease,
         "dataset_top_symptoms": dataset_symptoms,

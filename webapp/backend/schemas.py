@@ -29,6 +29,19 @@ class PredictResponse(BaseModel):
     recommendations: RecommendationBlock
 
 
+class ReportExportRequest(BaseModel):
+    """Generate PDF/Excel without relying on SQLite (reliable on cloud deploy)."""
+    patient_name: str = "Patient"
+    age: int | None = None
+    consultation_id: int | None = None
+    predicted_disease: str
+    confidence: float
+    risk_level: str
+    severity_score: float
+    symptoms: list[str]
+    recommendations: RecommendationBlock
+
+
 class AnalyticsSummary(BaseModel):
     total_consultations: int
     disease_counts: dict[str, int]

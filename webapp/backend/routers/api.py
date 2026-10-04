@@ -1,13 +1,22 @@
+from datetime import datetime, timezone
+
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import Response
 
 from backend import database
-from backend.schemas import AnalyticsSummary, PredictRequest, PredictResponse, RecommendationBlock, TopPrediction
+from backend.schemas import (
+    AnalyticsSummary,
+    PredictRequest,
+    PredictResponse,
+    RecommendationBlock,
+    ReportExportRequest,
+    TopPrediction,
+)
 from backend.services.analytics import build_analytics_summary
 from backend.services.llm import enhance_recommendations_async
 from backend.services.ml import artifacts_ready, get_symptom_list, predict_from_symptoms
 from backend.services.recommendations import build_recommendations
-from backend.services.reports import build_health_report_excel, build_health_report_pdf
+from backend.services.reports import build_health_report_excel, build_health_report_pdf, build_pdf_from_data
 from backend.services.risk import compute_risk_assessment
 
 router = APIRouter(prefix="/api")
@@ -85,6 +94,41 @@ async def analytics_full():
     return await build_analytics_summary()
 
 
+def _pdf_response(content: bytes, filename: str) -> Response:
+    return Response(
+        content=content,
+        media_type="application/pdf",
+        headers={
+            "Content-Disposition": f'attachment; filename="{filename}"',
+            "Content-Length": str(len(content)),
+            "Cache-Control": "no-store",
+        },
+    )
+
+
+@router.post("/reports/pdf")
+async def report_pdf_from_body(body: ReportExportRequest):
+    """Primary PDF route — uses request data (works on Render without DB lookup)."""
+    try:
+        payload = {
+            "patient_name": body.patient_name,
+            "age": body.age,
+            "consultation_id": body.consultation_id,
+            "predicted_disease": body.predicted_disease,
+            "confidence": body.confidence,
+            "risk_level": body.risk_level,
+            "severity_score": body.severity_score,
+            "symptoms": body.symptoms,
+            "recommendations": body.recommendations.model_dump(),
+            "created_at": datetime.now(timezone.utc).isoformat(),
+        }
+        content = build_pdf_from_data(payload)
+    except Exception as e:
+        raise HTTPException(500, detail=f"PDF build error: {type(e).__name__}: {e}") from e
+    cid = body.consultation_id or 0
+    return _pdf_response(content, f"MedAssist_report_{cid}.pdf")
+
+
 @router.get("/reports/{consultation_id}/pdf")
 async def report_pdf(consultation_id: int):
     try:
@@ -95,16 +139,7 @@ async def report_pdf(consultation_id: int):
         raise HTTPException(code, detail=msg) from e
     except Exception as e:
         raise HTTPException(500, detail=f"PDF build error: {type(e).__name__}: {e}") from e
-    filename = f"MedAssist_report_{consultation_id}.pdf"
-    return Response(
-        content=content,
-        media_type="application/pdf",
-        headers={
-            "Content-Disposition": f'attachment; filename="{filename}"',
-            "Content-Length": str(len(content)),
-            "Cache-Control": "no-store",
-        },
-    )
+    return _pdf_response(content, f"MedAssist_report_{consultation_id}.pdf")
 
 
 @router.get("/reports/{consultation_id}/excel")

@@ -2,6 +2,7 @@ const selected = new Set();
 let allSymptoms = [];
 let charts = {};
 let lastConsultationId = null;
+let lastReportPayload = null;
 
 const CHART_COLORS = [
   "rgba(45, 212, 191, 0.9)",
@@ -142,6 +143,9 @@ async function loadAnalytics() {
   const useSessionDisease = Object.keys(full.disease_counts || {}).length > 0;
 
   document.getElementById("kpiTotal").textContent = sessionCount;
+  const avgSev = full.average_severity ?? 0;
+  document.getElementById("kpiSeverity").textContent =
+    sessionCount > 0 ? `${Number(avgSev).toFixed(1)}` : "—";
   document.getElementById("kpiDiseases").textContent = useSessionDisease
     ? Object.keys(full.disease_counts).length
     : Object.keys(full.dataset_disease_stats || {}).length;
@@ -208,8 +212,7 @@ function setRiskBadge(level) {
   el.classList.add(map[level] || "risk-medium");
 }
 
-async function downloadFile(url, filename, expectedPrefix) {
-  const res = await fetch(url);
+async function saveBlobResponse(res, filename, expectedPrefix) {
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
     throw new Error(err.detail || `Download failed (${res.status})`);
@@ -232,6 +235,24 @@ async function downloadFile(url, filename, expectedPrefix) {
   link.click();
   link.remove();
   setTimeout(() => URL.revokeObjectURL(link.href), 500);
+}
+
+async function downloadPdfReport() {
+  if (!lastReportPayload) {
+    throw new Error("Run an analysis first.");
+  }
+  const res = await fetch("/api/reports/pdf", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(lastReportPayload),
+  });
+  const cid = lastReportPayload.consultation_id || "report";
+  await saveBlobResponse(res, `MedAssist_report_${cid}.pdf`, "pdf");
+}
+
+async function downloadFile(url, filename, expectedPrefix) {
+  const res = await fetch(url);
+  await saveBlobResponse(res, filename, expectedPrefix);
 }
 
 async function init() {
@@ -278,6 +299,17 @@ async function init() {
     try {
       const result = await api("/api/predict", { method: "POST", body: JSON.stringify(body) });
       lastConsultationId = result.consultation_id;
+      lastReportPayload = {
+        patient_name: body.patient_name,
+        age: body.age,
+        consultation_id: result.consultation_id,
+        predicted_disease: result.predicted_disease,
+        confidence: result.confidence,
+        risk_level: result.risk_level,
+        severity_score: result.severity_score,
+        symptoms: body.symptoms,
+        recommendations: result.recommendations,
+      };
       document.getElementById("resultsCard").hidden = false;
       document.getElementById("resultsCard").scrollIntoView({ behavior: "smooth", block: "start" });
       document.getElementById("predDisease").textContent = result.predicted_disease;
@@ -314,7 +346,7 @@ async function init() {
   });
 
   document.getElementById("pdfBtn").addEventListener("click", async () => {
-    if (!lastConsultationId) {
+    if (!lastReportPayload) {
       alert("Run an analysis first to generate a report.");
       return;
     }
@@ -322,11 +354,7 @@ async function init() {
     btn.disabled = true;
     btn.textContent = "Preparing PDF…";
     try {
-      await downloadFile(
-        `/api/reports/${lastConsultationId}/pdf`,
-        `MedAssist_report_${lastConsultationId}.pdf`,
-        "pdf"
-      );
+      await downloadPdfReport();
     } catch (e) {
       alert(`PDF download failed: ${e.message}`);
     } finally {
